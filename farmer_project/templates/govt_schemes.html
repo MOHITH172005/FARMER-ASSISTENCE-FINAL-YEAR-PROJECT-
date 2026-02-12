@@ -1,30 +1,32 @@
 {% load static %}
+{% include "includes/copyright.html" %}
 <!DOCTYPE html>
 <html lang="en">
+
 <!-- ===== BACK NAVIGATION ===== -->
 <div class="back-bar">
     <span class="back-btn" onclick="history.back()">⬅ Back</span>
-
     <span class="page-title">
-        {{ page_title|default:"Dashboard" }}
+        {{ page_title|default:"Schemes & Loans" }}
     </span>
 </div>
 
 <head>
     <meta charset="UTF-8">
-    <title>Government Schemes</title>
+    <title>Government Schemes & Farmer Loans</title>
     <link rel="stylesheet" href="{% static 'css/govt_schemes.css' %}">
 </head>
+
 <body>
 
 <div class="container">
 
-    <h1>🏛️ Government Agriculture Schemes</h1>
+    <h1>🏛️ Government Schemes & Farmer Loans</h1>
     <p class="subtitle">
-        Central & State Government schemes for farmers
+        Central & State Government schemes and agriculture loan information
     </p>
 
-    <!-- CENTRAL GOVT -->
+    <!-- ================= CENTRAL GOVERNMENT SCHEMES ================= -->
     <h2 class="section-title">🇮🇳 Central Government Schemes</h2>
 
     <div class="scheme-grid">
@@ -32,33 +34,27 @@
         <div class="scheme-card">
             <img src="{% static 'images/pmkisan.webp' %}" alt="PM Kisan">
             <h3>PM-KISAN</h3>
-            <p>Income support of ₹6000 per year to farmers</p>
-            <a href="https://pmkisan.gov.in" target="_blank" class="btn green">
-                Visit Official Site
-            </a>
+            <p>₹6000 per year income support to eligible farmers</p>
+            <a href="https://pmkisan.gov.in" target="_blank" class="btn green">Visit Official Site</a>
         </div>
 
         <div class="scheme-card">
             <img src="{% static 'images/pmfby.webp' %}" alt="PMFBY">
             <h3>PMFBY</h3>
-            <p>Crop insurance against natural calamities</p>
-            <a href="https://pmfby.gov.in" target="_blank" class="btn green">
-                Visit Official Site
-            </a>
+            <p>Crop insurance against natural calamities & losses</p>
+            <a href="https://pmfby.gov.in" target="_blank" class="btn green">Visit Official Site</a>
         </div>
 
         <div class="scheme-card">
             <img src="{% static 'images/soilhealth.webp' %}" alt="Soil Health Card">
             <h3>Soil Health Card</h3>
-            <p>Soil testing & nutrient recommendations</p>
-            <a href="https://soilhealth.dac.gov.in" target="_blank" class="btn green">
-                Visit Official Site
-            </a>
+            <p>Soil testing and fertilizer recommendations</p>
+            <a href="https://soilhealth.dac.gov.in" target="_blank" class="btn green">Visit Official Site</a>
         </div>
 
     </div>
 
-    <!-- STATE GOVT -->
+    <!-- ================= STATE GOVERNMENT SCHEMES ================= -->
     <h2 class="section-title">🏴 State Government Schemes</h2>
 
     <div class="scheme-grid">
@@ -66,28 +62,71 @@
         <div class="scheme-card">
             <img src="{% static 'images/rythubandhu.webp' %}" alt="Rythu Bandhu">
             <h3>Rythu Bandhu (Telangana)</h3>
-            <p>Investment support to farmers</p>
-            <a href="https://rythubandhu.telangana.gov.in" target="_blank" class="btn green">
-                Visit Official Site
-            </a>
+            <p>Investment support for crop cultivation</p>
+            <a href="https://rythubandhu.telangana.gov.in" target="_blank" class="btn green">Visit Official Site</a>
         </div>
 
         <div class="scheme-card">
             <img src="{% static 'images/rythubharosa.webp' %}" alt="YSR Rythu Bharosa">
             <h3>YSR Rythu Bharosa (AP)</h3>
             <p>Financial assistance for farmers</p>
-            <a href="https://ysrrythubharosa.ap.gov.in" target="_blank" class="btn green">
-                Visit Official Site
-            </a>
+            <a href="https://ysrrythubharosa.ap.gov.in" target="_blank" class="btn green">Visit Official Site</a>
         </div>
+
+    </div>
+
+    <!-- ================= CENTRAL AGRICULTURE LOANS ================= -->
+    <h2 class="section-title">🏛️ Central Government Agriculture Loans</h2>
+
+    <div class="scheme-grid">
 
         <div class="scheme-card">
             <img src="{% static 'images/kcc.webp' %}" alt="Kisan Credit Card">
-            <h3>Kisan Credit Card</h3>
-            <p>Easy credit for farming needs</p>
-            <a href="https://www.myscheme.gov.in/schemes/kcc" target="_blank" class="btn green">
-                Visit Official Site
-            </a>
+            <h3>Kisan Credit Card (KCC)</h3>
+            <p>Low-interest crop loans for seeds, fertilizers, irrigation & equipment</p>
+            <a href="https://www.myscheme.gov.in/schemes/kcc" target="_blank" class="btn green">Apply / Know More</a>
+        </div>
+
+        <div class="scheme-card">
+            <img src="{% static 'images/agri-infra.webp' %}" alt="AIF">
+            <h3>Agriculture Infrastructure Fund</h3>
+            <p>Loans for warehouses, cold storage & post-harvest infrastructure</p>
+            <a href="https://www.agriinfra.dac.gov.in" target="_blank" class="btn green">Visit Official Site</a>
+        </div>
+
+        <div class="scheme-card">
+            <img src="{% static 'images/nabard.webp' %}" alt="NABARD">
+            <h3>NABARD Loans</h3>
+            <p>Refinance support for crop loans & farm mechanization</p>
+            <a href="https://www.nabard.org" target="_blank" class="btn green">Visit NABARD</a>
+        </div>
+
+    </div>
+
+    <!-- ================= STATE AGRICULTURE LOANS ================= -->
+    <h2 class="section-title">🏦 State Government Agriculture Loans</h2>
+
+    <div class="scheme-grid">
+
+        <div class="scheme-card">
+            <img src="{% static 'images/ap-agri.webp' %}" alt="AP Loans">
+            <h3>AP Crop Loans</h3>
+            <p>Interest-subsidized crop loans via cooperative & nationalized banks</p>
+            <a href="https://apagrisnet.gov.in" target="_blank" class="btn green">AP Agriculture Dept</a>
+        </div>
+
+        <div class="scheme-card">
+            <img src="{% static 'images/ap-coop.webp' %}" alt="APCOB">
+            <h3>AP Cooperative Bank Loans</h3>
+            <p>PACS & cooperative bank loans for farming & allied activities</p>
+            <a href="https://apcob.org" target="_blank" class="btn green">Visit APCOB</a>
+        </div>
+
+        <div class="scheme-card">
+            <img src="{% static 'images/telangana-agri.webp' %}" alt="Telangana Loans">
+            <h3>Telangana Crop Loans</h3>
+            <p>Interest-free crop loans for eligible farmers</p>
+            <a href="https://agriculture.telangana.gov.in" target="_blank" class="btn green">Telangana Agriculture Dept</a>
         </div>
 
     </div>

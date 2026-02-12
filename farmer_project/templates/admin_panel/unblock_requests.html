@@ -1,0 +1,29 @@
+<h2>Unblock Requests</h2>
+
+<table border="1">
+    <tr>
+        <th>Farmer ID</th>
+        <th>Name</th>
+        <th>Message</th>
+        <th>Status</th>
+        <th>Action</th>
+    </tr>
+
+    {% for r in requests %}
+    <tr>
+        <td>{{ r.farmer.farmer_id }}</td>
+        <td>{{ r.farmer.full_name }}</td>
+        <td>{{ r.message }}</td>
+        <td>{{ r.status }}</td>
+        <td>
+            {% if r.status == "pending" %}
+                <a href="{% url 'approve_unblock' r.id %}">✅ Approve</a>
+                |
+                <a href="{% url 'reject_unblock' r.id %}">❌ Reject</a>
+            {% else %}
+                —
+            {% endif %}
+        </td>
+    </tr>
+    {% endfor %}
+</table>

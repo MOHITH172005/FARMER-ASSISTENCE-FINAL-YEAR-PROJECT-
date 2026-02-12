@@ -1,5 +1,6 @@
 {% load static %}
 {% load i18n %}
+{% include "includes/copyright.html" %}
 <!DOCTYPE html>
 <html lang="{{ LANGUAGE_CODE }}">
 <head>
@@ -9,7 +10,7 @@
     <!-- Google Font -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
 
-    <!-- CSS -->
+    <!-- Main CSS -->
     <link rel="stylesheet" href="{% static 'css/login.css' %}">
 </head>
 <body>
@@ -27,10 +28,11 @@
 
     <!-- LOGIN CARD -->
     <div class="login-card">
+
         <h2>{% trans "Welcome Back" %}</h2>
         <span class="subtitle">{% trans "Login to your account" %}</span>
 
-        <!-- 🔴 ERROR / SUCCESS MESSAGES -->
+        <!-- 🔴 DJANGO MESSAGES -->
         {% if messages %}
             {% for message in messages %}
                 <div class="error-msg">
@@ -39,11 +41,24 @@
             {% endfor %}
         {% endif %}
 
+        <!-- 🔓 UNBLOCK REQUEST (ONLY WHEN show_unblock = True) -->
+        {% if show_unblock %}
+            <div class="blocked-box">
+                <p class="blocked-text">
+                    🚫 {% trans "Your account is blocked due to misuse." %}
+                </p>
+
+                <a href="{% url 'unblock_request' %}" class="unblock-btn">
+                    🔓 {% trans "Request Account Unblock" %}
+                </a>
+            </div>
+        {% endif %}
+
         <!-- LOGIN FORM -->
         <form method="post" novalidate>
             {% csrf_token %}
 
-            <!-- ✅ FIXED USER ID FIELD -->
+            <!-- USER ID -->
             <div class="field">
                 <input
                     type="text"
@@ -85,11 +100,15 @@
                 <a href="{% url 'register' %}">
                     {% trans "Create account" %}
                 </a>
+                <a href="{% url 'unblock_request' %}">
+    {% trans "Request Account Unblock" %}
+</a>
+
             </div>
 
         </form>
-    </div>
 
+    </div>
 </div>
 
 </body>

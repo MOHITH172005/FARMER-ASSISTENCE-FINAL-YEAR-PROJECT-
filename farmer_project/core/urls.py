@@ -32,7 +32,7 @@ urlpatterns = [
     path("fertilizer-advice/", views.fertilizer_advice, name="fertilizer_advice"),
     path("irrigation/", views.irrigation, name="irrigation"),
     path("govt-schemes/", views.govt_schemes, name="govt_schemes"),
-    path("ai-assistant/", views.ai_assistant, name="ai_assistant"),
+    path("ai-assistant/", views.chatbot_view, name="chatbot"),
     path("trouble-login/", views.trouble_login, name="trouble_login"),
     path("verify-otp/", views.verify_otp, name="verify_otp"),
     path("contact-doctor/", views.contact_doctor, name="contact_doctor"),
@@ -75,6 +75,30 @@ urlpatterns = [
     path("admin/farmers/", views.admin_farmers, name="admin_farmers"),
     path("admin/farmers/<int:id>/toggle/", views.toggle_farmer, name="toggle_farmer"),
     path("admin/farmers/<int:id>/delete/", views.delete_farmer, name="delete_farmer"),
+    path("ai-assistant/", views.chatbot_view, name="chatbot"),
+    path("admin/unblock-requests/", views.admin_unblock_requests, name="admin_unblock_requests"),
+    path("admin/unblock/approve/<int:req_id>/", views.approve_unblock, name="approve_unblock"),
+    path("admin/unblock/reject/<int:req_id>/", views.reject_unblock, name="reject_unblock"),
+    path("unblock-request/", views.unblock_request, name="unblock_request"),
+    path("unblock/approve/<int:pk>/", views.approve_unblock, name="approve_unblock"),
+    path("unblock/reject/<int:pk>/", views.reject_unblock, name="reject_unblock"),
+    path(
+        "unblock-request/<int:pk>/approve/",
+        views.approve_unblock_request,
+        name="approve_unblock",
+    ),
+    path(
+        "unblock-request/<int:pk>/reject/",
+        views.reject_unblock_request,
+        name="reject_unblock",
+    ),
+    path('safety-consent/', views.safety_consent, name='safety_consent'),
+    path("emergency/trigger/", views.trigger_emergency, name="trigger_emergency"),
+    path("emergency/resolve/", views.resolve_emergency, name="resolve_emergency"),
+    
+
+
+
 
     
 

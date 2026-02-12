@@ -1,0 +1,80 @@
+{% load static %}
+{% include "includes/copyright.html" %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Request Account Unblock</title>
+    <link rel="stylesheet" href="{% static 'css/login.css' %}">
+</head>
+<body>
+
+<div class="login-wrapper">
+    <div class="login-card">
+
+        <h2>Request Account Unblock</h2>
+        <p class="subtitle">
+            Your account is currently blocked. Please submit an apology request to admin.
+        </p>
+
+        <!-- Django messages -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="error-msg">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+
+            <!-- ✅ FARMER ID INPUT (FIXED) -->
+            <div class="field">
+                <input
+                    type="text"
+                    name="farmer_id"
+                    required
+                    placeholder="Enter your Farmer ID"
+                >
+                <label>Farmer ID</label>
+            </div>
+
+            <!-- APOLOGY MESSAGE -->
+            <div class="field">
+                <textarea
+                    name="message"
+                    rows="4"
+                    required
+                    placeholder="Write apology message to admin"
+                    style="
+                        width:100%;
+                        padding:12px;
+                        background:transparent;
+                        border:1px solid rgba(255,255,255,0.3);
+                        color:white;
+                        border-radius:10px;
+                        resize:none;
+                    "
+                ></textarea>
+            </div>
+
+            <!-- PROMISE CHECKBOX -->
+            <div style="margin-top:15px;">
+                <label style="font-size:14px;">
+                    <input type="checkbox" name="promise" required>
+                    I promise that I will not repeat this again
+                </label>
+            </div>
+
+            <button type="submit" class="login-btn">
+                Submit Request
+            </button>
+
+        </form>
+
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,6 +1,7 @@
 from pathlib import Path
 import os
 from django.utils.translation import gettext_lazy as _
+import dj_database_url
 
 # --------------------------------------------------
 # BASE DIRECTORY
@@ -95,16 +96,10 @@ WSGI_APPLICATION = 'farmer_project.wsgi.application'
 # DATABASE
 # --------------------------------------------------
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'farmer_db',
-        'USER': 'postgres',
-        'PASSWORD': 'Hareesh@18',
-        'HOST': 'localhost',
-        'PORT': '5432',
-    }
+    'default': dj_database_url.parse(
+        "postgresql://postgres:dbUfUJoxrXOkZtSdxOjFbIwhhaJwPsvI@ballast.proxy.rlwy.net:58438/railway"
+    )
 }
-
 
 # --------------------------------------------------
 # PASSWORD VALIDATION

@@ -1,6 +1,8 @@
 from django.shortcuts import render, redirect
+from .content_filter import detect_misuse
 from django.shortcuts import render
 from django.contrib.auth.models import User
+from core.utils.misuse_detection import detect_misuse
 from django.utils import timezone
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
@@ -12,11 +14,13 @@ from .ml_utils import predict_disease, get_disease_details
 from django.shortcuts import render
 from django.core.files.storage import FileSystemStorage
 from .ml_utils import predict_disease, get_disease_details
-from .groq_chat import ask_farming_ai
+from .groq_chat import groq_chat
+from .models import MisuseLog, UnblockRequest
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
 from django.shortcuts import redirect
 import re
+from .models import EmergencyIncident
 from django.contrib import messages
 from django.contrib.auth.models import User
 from .models import FarmerProfile
@@ -30,7 +34,7 @@ from django.http import JsonResponse
 from .models import FarmerProfile
 import random
 from django.http import JsonResponse
-from .utils import generate_farmer_ids
+from core.utils.generate_farmer_ids import generate_farmer_ids
 from core.models import FarmerProfile
 from django.shortcuts import render
 from django.conf import settings
@@ -49,8 +53,11 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.hashers import make_password
 from django.core.mail import send_mail
 from django.db.models import Count
-from core.models import FarmerProfile, Notification, AIRequestLog   # adjust if needed
+from core.models import FarmerProfile, Notification,UnblockRequest, AIRequestLog   # adjust if needed
 from datetime import date, timedelta
+from django.contrib.auth import logout
+from .models import UnblockRequest
+from django.shortcuts import render, redirect, get_object_or_404
 
 
 
@@ -78,39 +85,59 @@ def splash(request):
 # ======================
 @csrf_protect
 def login_view(request):
-    if request.method == "POST":
-        user_id = request.POST.get("user_id")
-        password = request.POST.get("password")
+    context = {
+        "show_unblock": False
+    }
 
+    if request.method == "POST":
+        user_id = request.POST.get("user_id", "").strip()
+        password = request.POST.get("password", "")
+
+        # 🔍 Check user exists
         try:
-            user = User.objects.get(username=user_id)
+            user_obj = User.objects.get(username=user_id)
         except User.DoesNotExist:
             messages.error(request, "User ID not found. Please register.")
-            return redirect("login")
+            return render(request, "login.html", context)
 
-        # ✅ AUTHENTICATE CORRECTLY
+        # 🔐 Authenticate user
         user = authenticate(
             request,
-            username=user.username,   # MUST be username
+            username=user_obj.username,
             password=password
         )
 
-        if user is not None:
-            login(request, user)
-            return redirect("dashboard")
+        if user is None:
+            messages.error(request, "Invalid credentials")
+            return render(request, "login.html", context)
 
-        messages.error(
-            request,
-            "Incorrect password. <a href='/forgot-password/'>Forgot Password?</a>"
-        )
-        return redirect("login")
+        # 🚫 BLOCK CHECK
+        try:
+            profile = FarmerProfile.objects.get(user=user)
 
-    return render(request, "login.html")
+            if profile.is_blocked:
+                messages.error(
+                    request,
+                    "Your account is blocked. Please request unblock."
+                )
 
-# ======================
-# REGISTER
-# ======================
+                context["show_unblock"] = True
+                context["blocked_farmer_id"] = profile.farmer_id
+                return render(request, "login.html", context)
 
+        except FarmerProfile.DoesNotExist:
+            profile = None   # admin or non-farmer user
+
+        # ✅ Login allowed
+        login(request, user)
+
+        # 🟢 STEP 2: FORCE ONE-TIME SAFETY CONSENT (ALL USERS)
+        if profile and not profile.safety_consent_given:
+            return redirect("safety_consent")
+
+        return redirect("dashboard")
+
+    return render(request, "login.html", context)
 def register_view(request):
     if request.method == "POST":
         farmer_id = request.POST.get("farmer_id")
@@ -288,12 +315,28 @@ def reset_password(request):
 # ======================
 @login_required
 def dashboard(request):
-    profile = FarmerProfile.objects.filter(user=request.user).first()
 
-    # 🌾 Default: no duration
+    # 🔐 BLOCK + SAFETY CHECK
+    try:
+        profile = FarmerProfile.objects.get(user=request.user)
+
+        # 🚫 BLOCKED USER
+        if profile.is_blocked:
+            messages.error(
+                request,
+                "Your account is blocked. Please request unblock."
+            )
+            return redirect("login")
+
+        # 🟢 STEP 5: FORCE SAFETY CONSENT (NO BYPASS)
+        if not profile.safety_consent_given:
+            return redirect("safety_consent")
+
+    except FarmerProfile.DoesNotExist:
+        profile = None   # admin or non-farmer user
+
+    # 🌾 Crop duration logic
     crop_duration = None
-
-    # 🔹 TEMP / BASE LOGIC (can be replaced with ML later)
     if profile and profile.primary_crop:
         crop_duration_map = {
             "Rice": 120,
@@ -306,27 +349,20 @@ def dashboard(request):
         }
         crop_duration = crop_duration_map.get(profile.primary_crop)
 
+    # ✅ FINAL CONTEXT (ONLY ONE RETURN)
     context = {
-        # 👋 Farmer name (FROM DATABASE)
         "farmer_name": profile.full_name if profile and profile.full_name else "Farmer",
-
-        # 🆔 Farmer ID
         "farmer_id": request.user.username,
 
-        # 📍 Farmer details
-        "district": profile.district if profile and profile.district else "Not provided",
+        "district": profile.district if profile else "Not provided",
         "primary_crop": profile.primary_crop if profile and profile.primary_crop else "Not selected",
         "land_area": profile.land_area if profile and profile.land_area else "0",
 
-        # ⏱️ REAL crop duration (THIS FIXES AI PREDICTED)
         "crop_duration": crop_duration,
-
-        # 👤 Farmer photo
         "farmer_photo": profile.photo.url if profile and profile.photo else None,
     }
 
     return render(request, "dashboard.html", context)
-
 
 # ======================
 # NOTIFICATION COUNT API
@@ -601,19 +637,7 @@ def irrigation(request):
 def govt_schemes(request):
     return render(request, "govt_schemes.html")
 
-def ai_assistant(request):
-    answer = None
-    question = None
 
-    if request.method == "POST":
-        question = request.POST.get("question")
-        if question:
-            answer = ask_farming_ai(question)
-
-    return render(request, "ai_assistant.html", {
-        "question": question,
-        "answer": answer
-    })
 @login_required
 def profile(request):
     if request.method == "POST":
@@ -834,16 +858,25 @@ def is_admin(user):
 @login_required
 @user_passes_test(is_admin)
 def admin_dashboard(request):
-    if not is_admin(request.user):
-        return redirect("admin_login")
+
+    # 🔓 Unblock requests (pending only)
+    pending_requests_qs = UnblockRequest.objects.filter(status="pending")
 
     context = {
+        # 👨‍🌾 Farmers
         "total_farmers": FarmerProfile.objects.count(),
-        "total_users": User.objects.count(),
-        "ai_requests": Notification.objects.count(),
-        "weather_requests": 0,  # placeholder
-        "ml_usage": 0,          # placeholder
+        "active_farmers": FarmerProfile.objects.filter(is_blocked=False).count(),
+
+        # 🤖 AI / ML
+        "ai_requests": AIRequestLog.objects.count(),
+        "weather_requests": AIRequestLog.objects.filter(feature="weather").count(),
+        "ml_usage": AIRequestLog.objects.filter(feature="ml").count(),
+
+        # 🔓 UNBLOCK REQUEST DATA
+        "pending_unblock_requests": pending_requests_qs.count(),
+        "unblock_requests": pending_requests_qs,
     }
+
     return render(request, "admin_panel/dashboard.html", context)
 def admin_forgot_password(request):
     if request.method == "POST":
@@ -911,28 +944,40 @@ def admin_splash(request):
     return render(request, "admin_panel/splash.html")
 @login_required
 def admin_dashboard(request):
+    # 🔐 Simple admin check
     if request.user.username != "FARMERADMIN":
         return redirect("admin_login")
 
-    context = {
-        "farmers": FarmerProfile.objects.count(),
-        "total_farmers": FarmerProfile.objects.count(),   # ✅ TOTAL REGISTERED FARMERS
-        "users": User.objects.count(),
-        "ai_requests": AIRequestLog.objects.count(),
-        "weather_requests": AIRequestLog.objects.filter(feature="weather").count(),
-        "ml_usage": AIRequestLog.objects.filter(feature="ml").count(),
-        "total_farmers": FarmerProfile.objects.count(),
-        "active_farmers": FarmerProfile.objects.count(),  # optional
-        "weather_requests": AIRequestLog.objects.filter(
-            feature="weather"
-        ).count(),
+    # 👨‍🌾 Farmers
+    total_farmers = FarmerProfile.objects.count()
+    active_farmers = FarmerProfile.objects.filter(is_blocked=False).count()
 
-        # 🤖 AI REQUESTS (ALL FEATURES)
-        "ai_requests": AIRequestLog.objects.count(),
-    
+    # 🤖 AI / ML
+    ai_requests = AIRequestLog.objects.count()
+    weather_requests = AIRequestLog.objects.filter(feature="weather").count()
+    ml_usage = AIRequestLog.objects.filter(feature="ml").count()
+
+    # 🔓 Unblock Requests
+    pending_unblock_requests = UnblockRequest.objects.filter(status="pending")
+    pending_unblock_count = pending_unblock_requests.count()
+
+    context = {
+        # Farmers
+        "total_farmers": total_farmers,
+        "active_farmers": active_farmers,
+        "users": User.objects.count(),
+
+        # AI / ML
+        "ai_requests": ai_requests,
+        "weather_requests": weather_requests,
+        "ml_usage": ml_usage,
+
+        # 🔓 Unblock Requests (NEW)
+        "pending_unblock_requests": pending_unblock_requests,
+        "pending_unblock_count": pending_unblock_count,
     }
+
     return render(request, "admin_panel/dashboard.html", context)
-@login_required
 def weather_view(request):
     # ✅ Log weather usage
     AIRequestLog.objects.create(
@@ -963,4 +1008,288 @@ def delete_farmer(request, id):
     farmer = FarmerProfile.objects.get(id=id)
     farmer.user.delete()   # deletes both user + farmer profile
     return redirect("admin_farmers")
+@login_required
+def chatbot_view(request):
+    user = request.user
 
+    print("🔥 CHATBOT VIEW HIT 🔥")
+
+    # 🚫 Block admin / superuser access
+    if user.is_superuser or user.username == "FARMERADMIN":
+        return render(
+            request,
+            "admin_panel/not_allowed.html",
+            {
+                "message": "AI Assistant is only available for farmers."
+            }
+        )
+
+    # ✅ Fetch farmer profile safely
+    profile = FarmerProfile.objects.filter(user=user).first()
+
+    if not profile:
+        return render(
+            request,
+            "error.html",
+            {
+                "message": "Farmer profile not found. Please contact admin."
+            }
+        )
+
+    # 🚫 If farmer already blocked
+    if profile.is_blocked:
+        return render(
+            request,
+            "blocked.html",
+            {
+                "reason": profile.block_reason,
+                "blocked_at": profile.blocked_at
+            }
+        )
+
+    # 🔁 GET request → show chatbot UI
+    if request.method == "GET":
+        return render(request, "ai_assistant.html")
+
+    # 📩 POST → user message
+    message = request.POST.get("message", "").strip()
+
+    if not message:
+        return render(
+            request,
+            "ai_assistant.html",
+            {
+                "error": "Please enter a valid message."
+            }
+        )
+
+    # 🚨 MISUSE DETECTION
+    category, score = detect_misuse(message)
+
+    if category:
+        # 🔒 Block farmer
+        profile.is_blocked = True
+        profile.block_reason = category
+        profile.blocked_at = timezone.now()
+        profile.save(update_fields=["is_blocked", "block_reason", "blocked_at"])
+
+        # 🧾 Log misuse
+        MisuseLog.objects.create(
+            farmer=profile,          # ✅ correct FK
+            message=message,
+            category=category,
+            confidence_score=score
+        )
+
+        return render(
+            request,
+            "blocked.html",
+            {
+                "reason": category,
+                "confidence": score
+            }
+        )
+
+    # 🤖 SAFE MESSAGE → AI RESPONSE
+    try:
+        response = groq_chat(message)
+    except Exception as e:
+        print("❌ AI ERROR:", e)
+        return render(
+            request,
+            "ai_assistant.html",
+            {
+                "error": "AI service is temporarily unavailable. Please try again later."
+            }
+        )
+
+    # ✅ Render response
+    return render(
+        request,
+        "ai_assistant.html",
+        {
+            "user_message": message,
+            "answer": response
+        }
+    )
+
+def unblock_request(request):
+    """
+    Allow blocked farmers to request unblock WITHOUT login
+    """
+
+    if request.method == "POST":
+        farmer_id = request.POST.get("farmer_id", "").strip()
+        message = request.POST.get("message", "").strip()
+        promise = request.POST.get("promise") == "on"
+
+        # ❌ Farmer ID required
+        if not farmer_id:
+            messages.error(request, "Farmer ID is required.")
+            return render(request, "unblock_request.html")
+
+        # ❌ Validate farmer
+        try:
+            profile = FarmerProfile.objects.get(farmer_id=farmer_id)
+        except FarmerProfile.DoesNotExist:
+            messages.error(request, "Invalid Farmer ID.")
+            return render(request, "unblock_request.html")
+
+        # ❌ Not blocked
+        if not profile.is_blocked:
+            messages.error(
+                request,
+                "This account is not blocked."
+            )
+            return render(request, "unblock_request.html")
+
+        # ❌ Already requested
+        if UnblockRequest.objects.filter(
+            farmer=profile, status="pending"
+        ).exists():
+            messages.info(
+                request,
+                "You already submitted a request. Please wait for admin approval."
+            )
+            return redirect("login")
+
+        # ❌ Apology required
+        if not message:
+            messages.error(
+                request,
+                "Please write an apology message to admin."
+            )
+            return render(request, "unblock_request.html")
+
+        # ❌ Checkbox required
+        if not promise:
+            messages.error(
+                request,
+                "You must agree that you will not repeat this again."
+            )
+            return render(request, "unblock_request.html")
+
+        # ✅ Create unblock request
+        UnblockRequest.objects.create(
+            farmer=profile,
+            message=message,
+            promise=True
+        )
+
+        messages.success(
+            request,
+            "Your unblock request has been sent to admin."
+        )
+        return redirect("login")
+
+    # 🔁 GET request
+    return render(request, "unblock_request.html")
+@login_required
+def approve_unblock(request, req_id):
+    if request.user.username != "FARMERADMIN":
+        return redirect("admin_login")
+
+    req = UnblockRequest.objects.get(id=req_id)
+    farmer = req.farmer
+
+    # 🔓 UNBLOCK FARMER
+    farmer.is_blocked = False
+    farmer.block_reason = None
+    farmer.blocked_at = None
+    farmer.save()
+
+    req.status = "approved"
+    req.save()
+
+    messages.success(request, "Farmer unblocked successfully.")
+    return redirect("admin_unblock_requests")
+
+
+@login_required
+def reject_unblock(request, req_id):
+    if request.user.username != "FARMERADMIN":
+        return redirect("admin_login")
+
+    req = UnblockRequest.objects.get(id=req_id)
+    req.status = "rejected"
+    req.save()
+
+    messages.error(request, "Unblock request rejected.")
+    return redirect("admin_unblock_requests")
+
+@login_required
+def admin_unblock_requests(request):
+    if request.user.username != "FARMERADMIN":
+        return redirect("admin_login")
+
+    requests = UnblockRequest.objects.select_related("farmer").all()
+
+    return render(request, "admin_panel/unblock_requests.html", {
+        "requests": requests
+    })
+@login_required
+@user_passes_test(is_admin)
+def approve_unblock_request(request, pk):
+    if request.method == "POST":
+        req = get_object_or_404(UnblockRequest, pk=pk)
+        req.status = "approved"
+        req.save()
+
+        # unblock farmer
+        farmer = req.farmer
+        farmer.is_blocked = False
+        farmer.save()
+
+        messages.success(request, "Farmer unblocked successfully ✅")
+
+    return redirect("admin_dashboard")
+
+
+@login_required
+@user_passes_test(is_admin)
+def reject_unblock_request(request, pk):
+    if request.method == "POST":
+        req = get_object_or_404(UnblockRequest, pk=pk)
+        req.status = "rejected"
+        req.save()
+
+        messages.error(request, "Unblock request rejected ❌")
+
+    return redirect("admin_dashboard")
+
+@login_required
+def safety_consent(request):
+    profile = FarmerProfile.objects.get(user=request.user)
+
+    # 🔒 If already accepted, never show again
+    if profile.safety_consent_given:
+        return redirect("dashboard")
+
+    if request.method == "POST":
+        # (optional: you can save emergency numbers later if you want)
+
+        # ✅ MARK CONSENT AS GIVEN
+        profile.safety_consent_given = True
+        profile.safety_consent_at = timezone.now()
+        profile.save()
+
+        return redirect("dashboard")
+
+    return render(request, "safety_consent.html")
+@login_required
+def trigger_emergency(request):
+    profile = FarmerProfile.objects.get(user=request.user)
+
+    profile.emergency_active = True
+    profile.save()
+
+    EmergencyIncident.objects.create(
+        farmer=profile,
+        status="pending"
+    )
+
+    return JsonResponse({"status": "emergency_started"})
+
+def resolve_emergency(request):
+    messages.success(request, "Emergency resolved successfully")
+    return redirect("admin_dashboard")  # change if needed

@@ -98,3 +98,7 @@ body{
     transform:scale(1.03);
     transition:0.3s;
 }
+.card.danger {
+    background: linear-gradient(135deg, #ff6a6a, #ff3b3b);
+    color: #fff;
+}

@@ -259,3 +259,49 @@ body{
         right:20px;
     }
 }
+/* ================= BLOCKED ACCOUNT BOX ================= */
+.blocked-box{
+    margin-top:18px;
+    margin-bottom:18px;
+    padding:14px 16px;
+    background:rgba(239,68,68,0.18);
+    border:1px solid rgba(239,68,68,0.55);
+    border-radius:14px;
+    text-align:center;
+    color:#ffe1e1;
+    box-shadow:0 10px 30px rgba(239,68,68,0.25);
+}
+
+.blocked-box p{
+    margin:0;
+    font-size:14px;
+    font-weight:600;
+    line-height:1.5;
+}
+
+/* ================= UNBLOCK REQUEST BUTTON ================= */
+.unblock-btn{
+    display:inline-block;
+    margin-top:12px;
+    padding:10px 18px;
+    background:linear-gradient(90deg,#ef4444,#f87171);
+    color:white;
+    border-radius:999px;
+    font-size:13px;
+    font-weight:700;
+    text-decoration:none;
+    box-shadow:0 8px 24px rgba(239,68,68,0.45);
+    transition:all 0.25s ease;
+}
+
+.unblock-btn:hover{
+    transform:translateY(-2px);
+    box-shadow:0 12px 32px rgba(239,68,68,0.6);
+}
+
+/* ================= OPTIONAL: DISABLE LOGIN WHEN BLOCKED ================= */
+.login-card.blocked .login-btn{
+    opacity:0.5;
+    pointer-events:none;
+}
+

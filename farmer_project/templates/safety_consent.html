@@ -1,0 +1,20 @@
+{% include "includes/copyright.html" %}
+<h2>Farmer Safety & Support Consent</h2>
+
+<p>
+Your life is valuable. This system helps during emergency situations.
+With your permission, we can alert your family and authorities if danger is detected.
+</p>
+
+<form method="POST">
+  {% csrf_token %}
+  <input name="emergency1" placeholder="Emergency Contact 1" required>
+  <input name="family" placeholder="Family Contact" required>
+
+  <label>
+    <input type="checkbox" required>
+    I agree to safety monitoring
+  </label>
+
+  <button type="submit">Continue</button>
+</form>

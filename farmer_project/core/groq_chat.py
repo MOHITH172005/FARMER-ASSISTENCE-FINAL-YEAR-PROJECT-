@@ -1,9 +1,16 @@
 from groq import Groq
 from django.conf import settings
 
+# 🔑 Initialize Groq client
 client = Groq(api_key=settings.GROQ_API_KEY)
 
+
 def ask_farming_ai(question):
+    """
+    Core function that sends the prompt to Groq AI
+    and returns the response text.
+    """
+
     completion = client.chat.completions.create(
         model="llama-3.1-8b-instant",
         messages=[
@@ -40,3 +47,11 @@ def ask_farming_ai(question):
 
     return completion.choices[0].message.content
 
+
+def groq_chat(message):
+    """
+    Wrapper function used by views.py.
+    This keeps imports clean and avoids ImportError.
+    """
+
+    return ask_farming_ai(message)

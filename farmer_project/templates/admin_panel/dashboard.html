@@ -19,6 +19,7 @@
             <li>🤖 AI / ML</li>
             <li>🌦 Weather</li>
             <li>🦠 Diseases</li>
+            <li class="active">🔓 Unblock Requests</li>
             <li>🔔 Notifications</li>
             <li>⚙ Settings</li>
         </ul>
@@ -34,31 +35,44 @@
 
         <!-- STATS -->
         <section class="cards">
-            <div class="card">
-    ✅<br>
-    <b>{{ active_farmers }}</b>
-    <span>Active</span>
-</div>
 
             <div class="card">
-    👨‍🌾<br>
-    <b>{{ total_farmers }}</b>
-    <span>Registered Farmers</span>
-</div>
+                ✅<br>
+                <b>{{ active_farmers }}</b>
+                <span>Active Farmers</span>
+            </div>
 
             <div class="card">
-    🤖<br>
-    <b>{{ ai_requests }}</b>
-    <span>AI Requests</span>
-</div>
+                👨‍🌾<br>
+                <b>{{ total_farmers }}</b>
+                <span>Registered Farmers</span>
+            </div>
 
             <div class="card">
-    🌦<br>
-    <b>{{ weather_requests }}</b>
-    <span>Weather</span>
-</div>
+                🤖<br>
+                <b>{{ ai_requests }}</b>
+                <span>AI Requests</span>
+            </div>
 
-            <div class="card">📈<br><b>{{ ml_usage }}</b><span>ML Usage</span></div>
+            <div class="card">
+                🌦<br>
+                <b>{{ weather_requests }}</b>
+                <span>Weather</span>
+            </div>
+
+            <div class="card">
+                📈<br>
+                <b>{{ ml_usage }}</b>
+                <span>ML Usage</span>
+            </div>
+
+            <!-- 🔓 FIXED UNBLOCK REQUESTS CARD -->
+            <div class="card danger">
+                🔓<br>
+                <b>{{ pending_unblock_count }}</b>
+                <span>Pending Unblock Requests</span>
+            </div>
+
         </section>
 
         <!-- FEATURES -->
@@ -71,6 +85,55 @@
             <div class="box">🔔 Notifications</div>
             <div class="box">📊 Reports</div>
             <div class="box">⚙ System Settings</div>
+        </section>
+
+        <!-- 🔓 UNBLOCK REQUESTS TABLE -->
+        <section style="margin-top:40px;">
+            <h2>🔓 Pending Unblock Requests</h2>
+
+            {% if pending_unblock_requests %}
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Farmer ID</th>
+                            <th>Apology Message</th>
+                            <th>Promise</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for req in pending_unblock_requests %}
+                        <tr>
+                            <td><b>{{ req.farmer.farmer_id }}</b></td>
+                            <td>{{ req.message }}</td>
+                            <td>
+                                {% if req.promise %}
+                                    ✅ Yes
+                                {% else %}
+                                    ❌ No
+                                {% endif %}
+                            </td>
+                            <td>
+                                <td>
+    <form method="post" action="{% url 'approve_unblock' req.id %}" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" style="color:green;font-weight:600;">Approve</button>
+    </form>
+
+    <form method="post" action="{% url 'reject_unblock' req.id %}" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" style="color:red;font-weight:600;">Reject</button>
+    </form>
+</td>
+
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="empty">No pending unblock requests 🎉</p>
+            {% endif %}
         </section>
 
     </main>

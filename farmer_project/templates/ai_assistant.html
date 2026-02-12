@@ -1,38 +1,45 @@
 {% load static %}
+{% include "includes/copyright.html" %}
 <!DOCTYPE html>
 <html lang="en">
-<!-- ===== BACK NAVIGATION ===== -->
-<div class="back-bar">
-    <span class="back-btn" onclick="history.back()">⬅ Back</span>
-
-    <span class="page-title">
-        {{ page_title|default:"Dashboard" }}
-    </span>
-</div>
 
 <head>
     <meta charset="UTF-8">
     <title>AI Farming Assistant</title>
     <link rel="stylesheet" href="{% static 'css/ai_chat.css' %}">
 </head>
+
 <body>
+
+<!-- ===== BACK NAVIGATION ===== -->
+<div class="back-bar">
+    <span class="back-btn" onclick="history.back()">⬅ Back</span>
+    <span class="page-title">
+        {{ page_title|default:"AI Assistant" }}
+    </span>
+</div>
 
 <div class="container">
 
     <h1>🤖 AI Farming Assistant</h1>
     <p class="subtitle">Ask any farming question</p>
 
-    <!-- Chat Input -->
-    <form method="POST" class="chat-box">
+    <!-- ✅ Chat Input (IMPORTANT FIX) -->
+    <form method="POST"
+          action="{% url 'chatbot' %}"
+          class="chat-box">
         {% csrf_token %}
-        <input type="text" name="question"
+
+        <input type="text"
+               name="message"
                placeholder="Ask about crops, disease, fertilizer, weather..."
-               value="{{ question|default:'' }}"
+               value="{{ user_message|default:'' }}"
                required>
-        <button class="btn green">Ask</button>
+
+        <button type="submit" class="btn green">Ask</button>
     </form>
 
-    <!-- Chat Messages -->
+    <!-- ===== CHAT AREA ===== -->
     {% if answer %}
     <div class="chat-area">
 
@@ -40,7 +47,7 @@
         <div class="chat-message user">
             <div class="avatar">👨‍🌾</div>
             <div class="bubble">
-                {{ question }}
+                {{ user_message }}
             </div>
         </div>
 
@@ -55,8 +62,13 @@
     </div>
     {% endif %}
 
+    <!-- Optional error -->
+    {% if error %}
+    <p class="error">{{ error }}</p>
+    {% endif %}
+
     <div class="back">
-        <a href="/" class="btn outline">⬅ Back to Dashboard</a>
+        <a href="{% url 'dashboard' %}" class="btn outline">⬅ Back to Dashboard</a>
     </div>
 
 </div>

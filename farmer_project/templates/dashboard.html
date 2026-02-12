@@ -1,4 +1,5 @@
 {% load static %}
+{% include "includes/copyright.html" %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -76,7 +77,15 @@
     <p class="sub">
         Farmer ID: <strong>{{ farmer_id }}</strong>
     </p>
-
+     <!-- 🚨 EMERGENCY BUTTON (NEW) -->
+    <div style="margin:15px 0;">
+        <button id="panicBtn"
+            style="background:red;color:white;padding:12px 18px;border:none;font-size:16px;font-weight:bold;border-radius:6px;cursor:pointer;">
+            🚨 EMERGENCY
+        </button>
+        <br><br>
+        <video id="video" autoplay muted style="display:none;width:260px;border-radius:8px;"></video>
+    </div>
         <div class="top-actions">
 
             <!-- 🔔 NOTIFICATION -->
@@ -221,7 +230,7 @@
             <button class="btn green">Explore</button>
         </div>
 
-        <div class="feature-card" onclick="location.href='{% url 'ai_assistant' %}'">
+        <div class="feature-card" onclick="location.href='{% url 'chatbot' %}'">
             <h4>🤖 {{ TEXT.ai|default:"AI Assistant" }}</h4>
             <p>Ask farming questions in your language</p>
             <button class="btn green">Chat</button>
@@ -444,6 +453,113 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     );
 });
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const panicBtn = document.getElementById("panicBtn");
+    const videoEl = document.getElementById("video");
+
+    panicBtn.onclick = async function () {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: true,
+                audio: true
+            });
+
+            videoEl.style.display = "block";
+            videoEl.srcObject = stream;
+
+            let siren = new Audio("{% static 'siren.mp3' %}");
+            siren.loop = true;
+            siren.play();
+
+        } catch (err) {
+            alert("Camera or microphone permission denied");
+            console.error(err);
+        }
+    };
+});
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const panicBtn = document.getElementById("panicBtn");
+    const videoEl = document.getElementById("video");
+
+    panicBtn.onclick = async function () {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: true,
+                audio: true
+            });
+
+            videoEl.style.display = "block";
+            videoEl.srcObject = stream;
+
+            let siren = new Audio("{% static 'siren.mp3' %}");
+            siren.loop = true;
+            siren.play();
+
+            // 🟢 SEND EMERGENCY TO BACKEND
+            fetch("{% url 'trigger_emergency' %}", {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value
+                }
+            });
+
+        } catch (err) {
+            alert("Camera or microphone permission denied");
+        }
+    };
+});
+</script>
+<!-- 🟡 Soft check-in modal -->
+<div id="checkinBox" style="display:none;position:fixed;bottom:20px;right:20px;
+background:#fff;padding:15px;border-radius:8px;box-shadow:0 0 10px #000;">
+    <p><strong>Are you safe?</strong></p>
+    <button onclick="markSafe()">I am OK</button>
+    <button style="background:red;color:white" onclick="startEmergency()">I need help</button>
+</div>
+
+<video id="emergencyVideo" autoplay muted style="display:none;width:300px;"></video>
+
+<script>
+/* 🕒 SOFT CHECK-IN EVERY 10 MINUTES */
+setInterval(() => {
+    document.getElementById("checkinBox").style.display = "block";
+}, 10 * 60 * 1000);
+
+/* ✅ User says safe */
+function markSafe() {
+    document.getElementById("checkinBox").style.display = "none";
+}
+
+/* 🚨 Emergency starts */
+async function startEmergency() {
+    document.getElementById("checkinBox").style.display = "none";
+
+    await fetch("/emergency/trigger/");
+
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: false
+        });
+
+        const video = document.getElementById("emergencyVideo");
+        video.srcObject = stream;
+        video.style.display = "block";
+
+        // ⏱️ AUTO STOP AFTER 3 MINUTES
+        setTimeout(() => {
+            stream.getTracks().forEach(track => track.stop());
+            video.style.display = "none";
+        }, 3 * 60 * 1000);
+
+    } catch (err) {
+        alert("Camera permission denied");
+    }
+}
 </script>
 
 
