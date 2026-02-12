@@ -47,10 +47,8 @@ pydantic==2.12.5
 pydantic_core==2.41.5
 Pygments==2.19.2
 pyparsing==3.3.1
-pypiwin32==223
 python-dateutil==2.9.0.post0
 pytz==2025.2
-pywin32==311
 qrcode==8.2
 reportlab==4.4.6
 requests==2.32.5
