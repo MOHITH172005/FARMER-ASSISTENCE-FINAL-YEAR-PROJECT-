@@ -16,8 +16,7 @@ SECRET_KEY = 'django-insecure-change-this-key-later'
 
 DEBUG = True
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '*']
 
 # --------------------------------------------------
 # API KEYS
@@ -48,6 +47,8 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # 🔥 ADD THIS LINE
+
 
     # ✅ REQUIRED FOR LANGUAGE SWITCH
     'django.middleware.locale.LocaleMiddleware',
@@ -152,6 +153,8 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
+STATIC_ROOT = BASE_DIR / 'staticfiles'   # 🔥 ADD THIS
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'  # 🔥 ADD THIS
 
 
 # --------------------------------------------------
