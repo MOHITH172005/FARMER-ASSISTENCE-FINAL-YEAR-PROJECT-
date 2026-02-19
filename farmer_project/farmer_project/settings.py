@@ -98,7 +98,7 @@ WSGI_APPLICATION = 'farmer_project.wsgi.application'
 # --------------------------------------------------
 DATABASES = {
     'default': dj_database_url.parse(
-        "postgresql://postgres:dbUfUJoxrXOkZtSdxOjFbIwhhaJwPsvI@ballast.proxy.rlwy.net:58438/railway"
+        "postgresql://postgres:DRFWRHIeXqTUDuGkpeiFusrGJaIxGxVl@yamabiko.proxy.rlwy.net:13252/railway"
     )
 }
 
